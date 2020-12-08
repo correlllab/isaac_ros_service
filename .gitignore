@@ -34,4 +34,5 @@
 # Project
 build/
 out/
+.vscode/
 

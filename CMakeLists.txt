@@ -14,7 +14,8 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -lboost_system -lpthre
 # 2. Set paths to look for headers and sources in the project
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/out" )
 set( EXM_DIR ${PROJECT_SOURCE_DIR}/example )
-set( SRC_DIR ${PROJECT_SOURCE_DIR}/src )
+set( SRC_DIR ${PROJECT_SOURCE_DIR}/src     )
+set( TST_DIR ${PROJECT_SOURCE_DIR}/test    )
 # NOTE: Use ${VAR_NAME} to substitute the value of `VAR_NAME` in that place
 
 # the -I flag in gcc
