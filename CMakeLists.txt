@@ -16,6 +16,7 @@ set( CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/out" )
 set( EXM_DIR ${PROJECT_SOURCE_DIR}/example )
 set( SRC_DIR ${PROJECT_SOURCE_DIR}/src     )
 set( TST_DIR ${PROJECT_SOURCE_DIR}/test    )
+set( HLP_DIR ${PROJECT_SOURCE_DIR}/helpers )
 # NOTE: Use ${VAR_NAME} to substitute the value of `VAR_NAME` in that place
 
 # the -I flag in gcc
@@ -44,6 +45,8 @@ set( ASIO_HDR_DIR ${PROJECT_SOURCE_DIR}/boost_asio/include/boost )
 find_package( Boost ${BOOST_VRSN_MIN} REQUIRED COMPONENTS 
     system
     filesystem
+    thread
+    chrono
 ) 
 
 if( Boost_FOUND )
@@ -78,19 +81,40 @@ message( "\n\nWriting build scripts..." )
 set( EXEC_NAME server_blk )
 add_executable( ${EXEC_NAME} ${EXM_DIR}/${EXEC_NAME}.cpp )
 target_link_libraries( ${EXEC_NAME} 
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  Threads::Threads
+  ${Boost_LIBRARIES}
 )
 message( "${EXEC_NAME} ready!" )
 
 set( EXEC_NAME client_blk )
 add_executable( ${EXEC_NAME} ${EXM_DIR}/${EXEC_NAME}.cpp )
 target_link_libraries( ${EXEC_NAME} 
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  Threads::Threads
+  ${Boost_LIBRARIES}
 )
 message( "${EXEC_NAME} ready!" )
+
+set( EXEC_NAME thread_pool )
+add_executable( ${EXEC_NAME} ${EXM_DIR}/${EXEC_NAME}.cpp )
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+)
+message( "${EXEC_NAME} ready!" )
+
+##### Tests #####
+
+set( EXEC_NAME shared )
+add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp )
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+)
+message( "${EXEC_NAME} ready!" )
+
+# set( EXEC_NAME test01_server )
+# add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp )
+# target_link_libraries( ${EXEC_NAME} 
+#   ${Boost_LIBRARIES}
+# )
+# message( "${EXEC_NAME} ready!" )
+
+
 
 message( "\n\n Cmake setup COMPLETED" )

@@ -17,6 +17,7 @@
 #include <boost/array.hpp>
 
 #include "../helpers/helper.hpp"
+#include "../src/Connection.hpp"
 
 using boost::asio::ip::tcp;
 using std::queue;
@@ -28,11 +29,6 @@ using std::set;
 using std::max;
 
 const int max_length = 1024;
-
-typedef boost::array<double, 8> boostArrDbbl8;
-typedef boost::array<double,16> boostArrDbbl16;
-typedef boost::array<double,32> boostArrDbbl32; // Use this for now
-typedef boost::array<double,64> boostArrDbbl64;
 
 template<size_t N> inline
 boost::array<double,N> bad_boost_arr(){
@@ -67,114 +63,7 @@ void erase( vector<std::unique_ptr<T>>& vec ){
 }
 
 
-/*************** class Service Declaration ***************************************************************************/
-
-/***** Status Codes *****/
-
-enum MsgType{ 
-    REQUEST  = 0 ,
-    RESPONSE = 1 ,
-};
-typedef enum MsgType msg_t;
-
-enum StatusType{ 
-    VALID  = 0 ,
-    ERROR  = 1 ,
-    EMPTY  = 2 ,
-    OPEN   = 3 ,
-    CLOSED = 3 ,
-};
-typedef enum StatusType status_t;
-
-/***** Service Message *****/
-
-template<typename T>
-struct SrvMsg{
-    msg_t    type; 
-    status_t status; 
-    size_t   sequence;
-    T        data;
-};
-
-/***** Service *****/
-
-template<typename T>
-class Service{
-    // Container class for running one service
-    public:
-
-    /*** Vars ***/
-    string   topicName;
-    size_t   queueSize , 
-             seq_req   ,
-             seq_rsp   ;
-    queue<T> Q_req;
-    queue<T> Q_rsp;
-
-    /*** Functions ***/
-
-    bool   req_push( T  item   ){  if( Q_req.size() < queueSize ){  Q_req.push( item );  return 1;  }else{  return 0;  }  };
-    bool   rsp_push( T  item   ){  if( Q_rsp.size() < queueSize ){  Q_rsp.push( item );  return 1;  }else{  return 0;  }  };
-    size_t req_size(){  return Q_req.size();  };
-    size_t rsp_size(){  return Q_rsp.size();  };
-
-    bool req_pop( T& target ){  
-        if( Q_req.size() ){  
-            target = Q_req.pop();  
-            return 1;  
-        }else{  
-            target = bad_boost_arr();
-            return 0;  
-        }  
-    };
-
-    bool rsp_pop( T& target ){  
-        if( Q_rsp.size() ){  
-            target = Q_rsp.pop();  
-            return 1;  
-        }else{  
-            target = bad_boost_arr();
-            return 0;  
-        }  
-    };
-
-    SrvMsg<T> req_pop_msg(){  
-        T    data;
-        bool result = req_pop( data );
-        if( result ){
-            return SrvMsg<T>( REQUEST , VALID , seq_req++  , data );
-        }else{
-            return SrvMsg<T>( REQUEST , EMPTY , _BAD_INDEX , data );
-        }
-    };
-
-    SrvMsg<T> rsp_pop_msg(){  
-        T    data;
-        bool result = rsp_pop( data );
-        if( result ){
-            return SrvMsg<T>( RESPONSE , VALID , seq_req++  , data );
-        }else{
-            return SrvMsg<T>( RESPONSE , EMPTY , _BAD_INDEX , data );
-        }
-    };
-
-    Service( string tpcName , size_t qLen ) : topicName{ tpcName } , queueSize{ qLen }{  seq_req = seq_rsp = 0;  };
-};
-
-
 /*************** class ServiceBridge_Server Declaration **************************************************************/
-
-/***** Connection *****/
-// https://gist.github.com/wush978/6190443
-struct Connection{
-    boost::asio::io_service /*--*/ ios;
-    // boost::asio::ip::tcp::resolver resolver;
-    string /*-------------------*/ ip;
-    size_t /*-------------------*/ port;
-    size_t /*-------------------*/ bytes_rcvd;
-    size_t /*-------------------*/ bytes_sent;
-    status_t /*-----------------*/ status;
-}
 
 /***** ServiceBridge_Server *****/
 
@@ -187,22 +76,32 @@ class ServiceBridge_Server{
 bool /*-----*/ parse_service_file( string fullPath );
 size_t /*---*/ how_many_services();
 vector<string> get_served_ROS_topic_names();
-bool /*-----*/ serve(  );
+bool /*-----*/ start();
+bool /*-----*/ serve_loop();
 /* Send / Receive */
 
 ~ServiceBridge_Server();
+ServiceBridge_Server( string fullPath , size_t nThreadP = 2 );
 
 /*** Vars ***/
-boost::system::error_code netError;
 set<string> /*---------*/ serviceNames;
+size_t /*--------------*/ NthreadsPerTopic;
+string /*--------------*/ ip;
+size_t /*--------------*/ port;
 
 /***** Protected *****/ protected:
-vector< Service<boostArrDbbl32> > services;
+vector<Service<XferType>> services;
+vector<Connection> /*--*/ connections;
 
 /*** END ***/ }; 
 
 
 /*************** class ServiceBridge_Server Definition ***************************************************************/
+
+ServiceBridge_Server::ServiceBridge_Server( string fullPath , size_t nThreadP ) : NthreadsPerTopic{ nThreadP } {
+    // Set up server vars and parse the service file
+    parse_service_file( fullPath );
+}
 
 ServiceBridge_Server::~ServiceBridge_Server(){
     // Free all pointers
@@ -246,7 +145,7 @@ bool ServiceBridge_Server::parse_service_file( string fullPath ){
 
             if( !container_has( serviceNames , topicName ) ){  
                 if( maxLen <= 32 ){
-                    services.push_back( Service<boostArrDbbl32>( topicName , qLen ) );
+                    services.push_back( Service<XferType>( topicName , qLen ) );
                     serviceNames.insert( topicName );
                 }else{
                     cout << "ServiceBridge_Server::parse_service_file: Max number of elements is " << maxElems 
@@ -261,4 +160,45 @@ bool ServiceBridge_Server::parse_service_file( string fullPath ){
         return 0;
     }
     return 1;
+}
+
+size_t /*---*/ ServiceBridge_Server::how_many_services(){  return services.size();  }
+vector<string> ServiceBridge_Server::get_served_ROS_topic_names(){  return convert_set_to_vector( serviceNames );  }
+
+
+
+string getAddress( std::shared_ptr<boost::asio::io_service> ioService , boost::system::error_code& err ){
+    boost::asio::ip::tcp::resolver resolver( *ioService );
+    return resolver.resolve( boost::asio::ip::host_name() , err ) ->endpoint().address().to_string();
+}
+
+bool ServiceBridge_Server::start(){
+    // Start serving connections
+    
+
+    // 1. For every connection, start the designated number of connections
+    for( auto srv_i : services ){
+        // 2. For each connection
+        for( size_t i = 0 ; i < NthreadsPerTopic ; i++ ){
+            srv_i.topicName;
+            std::shared_ptr<boost::asio::io_service> srv_(  new boost::asio::io_service()  );
+            string /*-----------------------------*/ ip_ = getAddress( srv_ , netError );
+            connections.push_back(
+                // srv = std::make_shared<boost::asio::io_service>
+                Connection(  
+                    srv_ ,
+                    ip_  ,
+                )
+            )
+        }
+    }
+}
+
+/*************** Main ************************************************************************************************/
+
+int main( int argc , char* argv[] ){
+    ServiceBridge_Server server( "/home/jwatson/isaac_ros_service/test/test01.srv" );
+    cout << "There are " << server.how_many_services() << " services." << endl; 
+    cout << "Will poll ROS at the following topics: " << server.get_served_ROS_topic_names() << endl;
+    return 0;
 }

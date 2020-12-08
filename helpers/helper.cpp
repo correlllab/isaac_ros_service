@@ -1,5 +1,7 @@
 #include "helper.hpp"
 
+static bool _DEBUG = 1; // if( _DEBUG ){ cerr << "" << endl; }
+
 string ltrim( const string& s ){
     // Return a version of the string with LEADING _WHITESPACE removed
     // https://www.techiedelight.com/trim-string-cpp-remove-leading-trailing-spaces/
@@ -20,35 +22,39 @@ string trim( const string& s ){
     return rtrim( ltrim( s ) );
 }
 
-vector<string> split_CSV_line( const string& line , string delimiter = "," , bool stripWS = 1 ){
+vector<string> split_CSV_line( const string& line , string delimiter , bool stripWS ){
     // Return a vector of strings separated by commas
     // URL:  https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
     
-    long int /*-*/ curr =  0;
+    if( _DEBUG ){ cerr << "Entered split_CSV_line.." << endl; }
+
+    size_t /*---*/ curr =  0;
     long int /*-*/ last = -1;
     long int /*-*/ len  = line.length();
     string /*---*/ token;
     vector<string> scanVec;
     vector<string> rtrnVec;
-    size_t /*---*/ vecLen;
 
     // 1. Split the string into chunks according to the delimiter
-    while(  ( curr = line.find( delimiter ) )  !=  std::string::npos  ){
+    while(  ( curr = line.find( delimiter , last+1 ) )  !=  std::string::npos  ){
         token = line.substr( last+1 , curr-last-1 );
         scanVec.push_back( token );
-        curr = last;
+        if( _DEBUG ){ cerr << "Token,1: " << token << endl; }
+        last = curr;
     }
     if( last+1 < len-1 ){   
         token = line.substr( last+1 , len-1 );  
+        if( _DEBUG ){ cerr << "Token,2: " << token << endl; }
         scanVec.push_back( token );
     }
     
     // 2. Strip _WHITESPACE and store non-WS strings
-    vecLen = scanVec.size();
     for( auto item : scanVec ){
         token = trim( item );
         if( token.length() ){  rtrnVec.push_back( token );  }
     }
+
+    if( _DEBUG ){ cerr << "Exited split_CSV_line" << endl; }
 
     // 3. Return the processed vector
     return rtrnVec;
@@ -74,3 +80,12 @@ vector<string> readlines( string path ){
     return rtnVec;
 }
 
+void disconnect_stdout(){
+    // Disconnect from stdout to make valgrind happy
+    fclose( stdin );
+    fclose( stdout );
+    fclose( stderr );
+};
+
+ 
+    
