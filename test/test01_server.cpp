@@ -166,33 +166,42 @@ size_t /*---*/ ServiceBridge_Server::how_many_services(){  return services.size(
 vector<string> ServiceBridge_Server::get_served_ROS_topic_names(){  return convert_set_to_vector( serviceNames );  }
 
 
+// FIXME: START HERE
+/*
+    [ ] Create threads
+    [ ] Accept connection and set status
+    [ ] session: Serve one connection
+    [ ] run gracefully: How to `spin_once`?  Sleep, loop, and assume the other threads are running?
+    [ ] exit gracefully: How to make the server close its connections
+*/
 
-string getAddress( std::shared_ptr<boost::asio::io_service> ioService , boost::system::error_code& err ){
-    boost::asio::ip::tcp::resolver resolver( *ioService );
-    return resolver.resolve( boost::asio::ip::host_name() , err ) ->endpoint().address().to_string();
-}
 
-bool ServiceBridge_Server::start(){
-    // Start serving connections
+// string getAddress( std::shared_ptr<boost::asio::io_service> ioService , boost::system::error_code& err ){
+//     boost::asio::ip::tcp::resolver resolver( *ioService );
+//     return resolver.resolve( boost::asio::ip::host_name() , err ) ->endpoint().address().to_string();
+// }
+
+// bool ServiceBridge_Server::start(){
+//     // Start serving connections
     
 
-    // 1. For every connection, start the designated number of connections
-    for( auto srv_i : services ){
-        // 2. For each connection
-        for( size_t i = 0 ; i < NthreadsPerTopic ; i++ ){
-            srv_i.topicName;
-            std::shared_ptr<boost::asio::io_service> srv_(  new boost::asio::io_service()  );
-            string /*-----------------------------*/ ip_ = getAddress( srv_ , netError );
-            connections.push_back(
-                // srv = std::make_shared<boost::asio::io_service>
-                Connection(  
-                    srv_ ,
-                    ip_  ,
-                )
-            )
-        }
-    }
-}
+//     // 1. For every connection, start the designated number of connections
+//     for( auto srv_i : services ){
+//         // 2. For each connection
+//         for( size_t i = 0 ; i < NthreadsPerTopic ; i++ ){
+//             srv_i.topicName;
+//             std::shared_ptr<boost::asio::io_service> srv_(  new boost::asio::io_service()  );
+//             string /*-----------------------------*/ ip_ = getAddress( srv_ , netError );
+//             connections.push_back(
+//                 // srv = std::make_shared<boost::asio::io_service>
+//                 Connection(  
+//                     srv_ ,
+//                     ip_  ,
+//                 )
+//             )
+//         }
+//     }
+// }
 
 /*************** Main ************************************************************************************************/
 

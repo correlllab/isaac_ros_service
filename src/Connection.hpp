@@ -125,7 +125,7 @@ SrvMsg<T> rsp_pop_msg(){
 };
 
 ServiceQueue( string tpcName , size_t qLen ) : topicName{ tpcName } , queueSize{ qLen }{  seq_req = seq_rsp = 0;  };
-~ServiceQueue(){  Q_rsp.  }
+~ServiceQueue(){  clear_queue( Q_req );  clear_queue( Q_rsp );  }
 };
 
 /*
@@ -149,6 +149,8 @@ size_t /*--------------------------------*/ bytes_rcvd;
 size_t /*--------------------------------*/ bytes_sent;
 boost::system::error_code /*-------------*/ netError;
 std::shared_ptr<ServiceQueue<xfer_shr_ptr>> service;
+
+// TODO: ADD NETWORK INFO VARS
 
 };
 
