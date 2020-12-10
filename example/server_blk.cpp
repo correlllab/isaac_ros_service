@@ -48,6 +48,12 @@ void server(boost::asio::io_service& io_service, unsigned short port)
   for (;;)
   {
     tcp::socket sock(io_service);
+    /* If the connection has been cleanly closed by the peer you should get an EOF while reading. 
+    Otherwise I generally ping in order to figure out if the connection is really alive. 
+    
+    Just check for boost::asio::error::eof error in your async_receive handler. 
+    It means the connection has been closed. That's the only proper way to do this.*/
+
     a.accept(sock);
     std::thread(session, std::move(sock)).detach();
   }

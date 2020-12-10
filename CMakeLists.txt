@@ -5,7 +5,7 @@
 # 1. Setup: Declare min CMake version, name of the project, and compiler settings
 cmake_minimum_required( VERSION 3.0 )
 project( isaac_ros_service )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -lboost_system -lpthread" ) # Use C++17
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -lboost_system -pthread" ) # Use C++17
 # NOTE: CMake function calls do NOT have commas between arguments!
 
 
@@ -23,6 +23,8 @@ set( HLP_DIR ${PROJECT_SOURCE_DIR}/helpers )
 include_directories(  
   ${EXM_DIR}
   ${SRC_DIR}
+  ${TST_DIR}
+  ${HLP_DIR}
 ) 
 
 # 3. Shortcuts
@@ -41,6 +43,9 @@ set( Boost_USE_MULTITHREADED  ON  )
 set( Boost_USE_STATIC_RUNTIME OFF ) 
 
 set( ASIO_HDR_DIR ${PROJECT_SOURCE_DIR}/boost_asio/include/boost )
+
+# set( BOOST_ROOT /usr/lib/x86_64-linux-gnu/ )
+set( BOOST_LIBRARYDIR /usr/lib/x86_64-linux-gnu )
 
 find_package( Boost ${BOOST_VRSN_MIN} REQUIRED COMPONENTS 
     system
@@ -99,6 +104,13 @@ target_link_libraries( ${EXEC_NAME}
 )
 message( "${EXEC_NAME} ready!" )
 
+set( EXEC_NAME lockfree_queue )
+add_executable( ${EXEC_NAME} ${EXM_DIR}/${EXEC_NAME}.cpp )
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+)
+message( "${EXEC_NAME} ready!" )
+
 ##### Tests #####
 
 set( EXEC_NAME shared )
@@ -108,12 +120,13 @@ target_link_libraries( ${EXEC_NAME}
 )
 message( "${EXEC_NAME} ready!" )
 
-# set( EXEC_NAME test01_server )
-# add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp )
-# target_link_libraries( ${EXEC_NAME} 
-#   ${Boost_LIBRARIES}
-# )
-# message( "${EXEC_NAME} ready!" )
+set( EXEC_NAME test01_server )
+add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp ${SRC_DIR}/Connection.cpp ${SRC_DIR}/IP.cpp )
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
+)
+message( "${EXEC_NAME} ready!" )
 
 
 

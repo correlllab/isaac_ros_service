@@ -35,7 +35,12 @@ int main() {
 
 	boost::asio::io_service io_service;
 	boost::thread_group threads;
+	
+	/* The work class is used to inform the io_service when work starts and finishes. This ensures that the io_service object's run() function 
+	will not exit while work is underway, and that it does exit when there is no unfinished work remaining. */
 	boost::asio::io_service::work work(io_service);
+	// in addition, to stop the application, I use work.reset(); before t.join();
+	
 	for( unsigned i = 0 ; i < boost::thread::hardware_concurrency() ; ++i ){
 		threads.create_thread(boost::bind(&boost::asio::io_service::run,
 			&io_service));

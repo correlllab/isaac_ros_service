@@ -1,6 +1,6 @@
 #include "helper.hpp"
 
-static bool _DEBUG = 1; // if( _DEBUG ){ cerr << "" << endl; }
+// static bool _DEBUG = 1; // if( _DEBUG ){ cerr << "" << endl; }
 
 string ltrim( const string& s ){
     // Return a version of the string with LEADING _WHITESPACE removed

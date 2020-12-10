@@ -10,14 +10,25 @@
 #include <iostream>
 #include <unistd.h>
 #include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "../helpers/helper.hpp"
+#include "IP.hpp"
 
 /*************** Types & Names ***************************************************************************************/
+
+namespace b_asio = boost::asio;
+namespace b_ip   = b_asio::ip;
 
 typedef boost::shared_ptr<double[]> xfer_shr_ptr;
 typedef boost::packaged_task<int>   task_t;
 typedef boost::shared_ptr<task_t>   ptask_t;
+
+
+/*************** Utilities *******************************************************************************************/
+
+string get_local_ip_addr( b_ip::tcp::socket& sock );
+string get_local_ip_addr();
 
 
 /*************** Structs and Enum ************************************************************************************/
@@ -102,25 +113,25 @@ bool rsp_pop( T& target ){
     }  
 };
 
-SrvMsg<T> req_pop_msg(){
+SrvMsg req_pop_msg(){
     // Pop from requests and create message
     T    data;
     bool result = req_pop( data );
     if( result ){
-        return SrvMsg<T>( REQUEST , VALID , seq_req++  , data );
+        return SrvMsg( REQUEST , VALID , seq_req++  , data );
     }else{
-        return SrvMsg<T>( REQUEST , EMPTY , _BAD_INDEX , data );
+        return SrvMsg( REQUEST , EMPTY , _BAD_INDEX , data );
     }
 };
 
-SrvMsg<T> rsp_pop_msg(){  
+SrvMsg rsp_pop_msg(){  
     // Pop from responses and create message
     T    data;
     bool result = rsp_pop( data );
     if( result ){
-        return SrvMsg<T>( RESPONSE , VALID , seq_req++  , data );
+        return SrvMsg( RESPONSE , VALID , seq_req++  , data );
     }else{
-        return SrvMsg<T>( RESPONSE , EMPTY , _BAD_INDEX , data );
+        return SrvMsg( RESPONSE , EMPTY , _BAD_INDEX , data );
     }
 };
 
@@ -148,7 +159,6 @@ status_t /*------------------------------*/ status;
 size_t /*--------------------------------*/ bytes_rcvd;
 size_t /*--------------------------------*/ bytes_sent;
 boost::system::error_code /*-------------*/ netError;
-std::shared_ptr<ServiceQueue<xfer_shr_ptr>> service;
 
 // TODO: ADD NETWORK INFO VARS
 

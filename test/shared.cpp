@@ -40,8 +40,6 @@ typedef enum StatusType status_t;
 
 /***** Service Message *****/
 
-template< typename T >  struct array_deleter{  void operator ()( T const * p){  delete[] p;  }  };
-
 struct SrvMsg{
     /*** Vars ***/
     msg_t /*-----------------*/ type; 
