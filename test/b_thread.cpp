@@ -69,55 +69,75 @@ void wait_and_pop( T& popped_value ){
 
 };
 
+struct Payload{
+    boost::shared_ptr<double[]> data;
+    size_t /*----------------*/ dataLen;
+};
 
 // Prepare things
-b_asio::io_service /*---------------*/ io_service;
-std::vector<boost::thread> /*-------*/ threads;
-concurrent_queue<shared_ptr<double[]>> input;
-concurrent_queue<shared_ptr<double[]>> output;
-size_t /*---------------------------*/ count  = boost::thread::hardware_concurrency() * 2;
-size_t /*---------------------------*/ active = 0;
-size_t /*---------------------------*/ N      = 0;
+b_asio::io_service /*--------------*/ io_service;
+std::vector<boost::thread> /*------*/ threads;
+concurrent_queue<Payload> input;
+concurrent_queue<Payload> output;
+size_t /*--------------------------*/ count  = boost::thread::hardware_concurrency() * 2;
+size_t /*--------------------------*/ active = 0;
+size_t /*--------------------------*/ N      = 0;
 
 const size_t DATA_LEN = 5;
 
 /*  Shortly, there is no reason to pass by value, 
 unless the goal is to share ownership of an object (eg. between different data structures, or between different threads). */
 
-void populate_arr( boost::shared_ptr<double[]> data , double val , size_t n = DATA_LEN ){
-    for( u_char i = 0 ; i < DATA_LEN ; i++ ){  data[i] = val;  }
+
+
+void populate_arr( Payload& elem , double val , size_t n = DATA_LEN ){
+    for( u_char i = 0 ; i < DATA_LEN ; i++ ){  elem.data.get()[i] = val;  }
 }
 
-void ( boost::shared_ptr<double[]> data , double val , size_t n = DATA_LEN ){
+void report_arr( const Payload& elem , double val , size_t n = DATA_LEN ){
     cout << "[ ";
-    for( u_char i = 0 ; i < DATA_LEN ; i++ ){  cout << data.get()[i] << ", ";  }
+    for( u_char i = 0 ; i < DATA_LEN ; i++ ){  cout << elem.data.get()[i] << ", ";  }
     cout << "]";
 }
 
-boost::shared_ptr<double[]> mult_arr( boost::shared_ptr<double[]> data , double factor , size_t n = DATA_LEN ){
-    for( u_char i = 0 ; i < DATA_LEN ; i++ ){  data[i] = val;  }
+Payload mult_arr( const Payload& elem , double factor , size_t n = DATA_LEN ){
+    Payload rtnArr{ shared_ptr<double[]>( new double[DATA_LEN] , array_deleter<double>() ) , DATA_LEN };
+    for( u_char i = 0 ; i < DATA_LEN ; i++ ){  rtnArr.data.get()[i] = elem.data.get()[i] * factor;  }
+    return rtnArr;
 }
 
 struct Worker{
+    // Read and process data
     
     /* Init */ 
-    concurrent_queue<shared_ptr<double[]>>& in;
-    concurrent_queue<shared_ptr<double[]>>& out;
+    concurrent_queue<Payload>& in;
+    concurrent_queue<Payload>& out;
     double factor;
     size_t N;
-    Worker( double fctr , concurrent_queue<shared_ptr<double[]>>& in_ , concurrent_queue<shared_ptr<double[]>>& out_ ) : 
+    Worker( double fctr , concurrent_queue<Payload>& in_ , concurrent_queue<Payload>& out_ ) : 
         factor{ fctr } , in{ in_ } , out{ out_ } {  N = 0;  };
 
     /* Work */ 
-    void process_one(){
-        shared_ptr<double[]> val;
-        if( !in.empty() ){
-            in.wait_and_pop( val );
-            out.push(   )
-        }
-    }
 
-}
+    void process_one(){
+        Payload inVal;
+        Payload outVal;
+
+        if( !in.empty() ){
+            in.wait_and_pop( inVal );
+            outVal = mult_arr( inVal , 2.0 );
+            out.push( outVal );
+        }
+    };
+
+    void store_one(){
+        // If there is one to send, then send it
+    };
+};
+
+struct Sender{
+    // Write and send data
+};
 
 
 int main(){
