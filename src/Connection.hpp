@@ -20,6 +20,8 @@
 namespace b_asio = boost::asio;
 namespace b_ip   = b_asio::ip;
 
+using b_ip::tcp;
+
 typedef boost::shared_ptr<double[]> xfer_shr_ptr;
 typedef boost::packaged_task<int>   task_t;
 typedef boost::shared_ptr<task_t>   ptask_t;
@@ -69,54 +71,85 @@ struct SrvMsg{
 };
 
 
+/*************** concurrent_queue ************************************************************************************/
+
+template<typename T>
+class concurrent_queue{
+// a simple thread-safe multiple producer, multiple consumer queue (LOCKS)
+// https://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
+
+/***** Protected *****/ protected:
+
+std::queue<T> /*-------*/ _queue; // - Underlying queue
+boost::mutex /*--------*/ _mutex; // - Lock
+boost::condition_variable cond_var; // Semaphore
+
+/***** Public *****/ public:
+
+// concurrent_queue( boost::mutex& mtx , boost::condition_variable& cnd ) : _mutex{ mtc } , cond_var{cnd} {}
+
+void push( T const& data ){
+    // Lock the queue, push data, unlock, notify
+    boost::mutex::scoped_lock lock(_mutex);
+    _queue.push( data );
+    lock.unlock();
+    cond_var.notify_one();
+}
+
+bool empty() const{
+    // Lock the queue, then return `true` if the queue is empty
+    boost::mutex::scoped_lock lock(_mutex);
+    return _queue.empty();
+}
+
+bool try_pop( T& popped_value ){
+    /* returns true if there was a value to retrieve (in which case it retrieves it), or false to indicate that the queue was empty. */ 
+    boost::mutex::scoped_lock lock( _mutex );
+    if( _queue.empty() ){  return false;  }
+    popped_value = _queue.front();
+    _queue.pop();
+    return true;
+}
+
+void wait_and_pop( T& popped_value ){
+    // If multiple threads are popping entries from a full queue, then they just get serialized inside wait_and_pop, and everything works fine.
+    boost::mutex::scoped_lock lock(_mutex);
+    while( _queue.empty() ){  cond_var.wait( lock );  }
+    popped_value=_queue.front();
+    _queue.pop();
+}
+
+void clear(){
+    T popped_value;
+    while( !empty() ){  try_pop( popped_value );  }
+}
+
+};
+
+
 /*************** Service *********************************************************************************************/
 
 /***** ServiceQueue *****/
 
 template<typename T>
-class ServiceQueue{
+struct ServiceQueue{
 // Container class for running one service
 /***** Public *****/ public:
 
 /*** Vars ***/
-string   topicName;
-size_t   queueSize , 
-         seq_req   ,
-         seq_rsp   ;
-queue<T> Q_req;
-queue<T> Q_rsp;
+string /*--------*/ topicName;
+size_t /*--------*/ queueSize, 
+                    seq_req  ,
+                    seq_rsp  ;
+concurrent_queue<T> Q_req;
+concurrent_queue<T> Q_rsp;
 
 /*** Functions ***/
-
-bool   req_push( T  item   ){  if( Q_req.size() < queueSize ){  Q_req.push( item );  return 1;  }else{  return 0;  }  };
-bool   rsp_push( T  item   ){  if( Q_rsp.size() < queueSize ){  Q_rsp.push( item );  return 1;  }else{  return 0;  }  };
-size_t req_size(){  return Q_req.size();  };
-size_t rsp_size(){  return Q_rsp.size();  };
-
-bool req_pop( T& target ){  
-    // Pop from requests
-    if( Q_req.size() ){  
-        target = Q_req.pop();  
-        return 1;  
-    }else{  
-        return 0;  
-    }  
-};
-
-bool rsp_pop( T& target ){  
-    // Pop from responses
-    if( Q_rsp.size() ){  
-        target = Q_rsp.pop();  
-        return 1;  
-    }else{  
-        return 0;  
-    }  
-};
 
 SrvMsg req_pop_msg(){
     // Pop from requests and create message
     T    data;
-    bool result = req_pop( data );
+    bool result = Q_req.try_pop( data );
     if( result ){
         return SrvMsg( REQUEST , VALID , seq_req++  , data );
     }else{
@@ -127,7 +160,7 @@ SrvMsg req_pop_msg(){
 SrvMsg rsp_pop_msg(){  
     // Pop from responses and create message
     T    data;
-    bool result = rsp_pop( data );
+    bool result = Q_rsp.try_pop( data );
     if( result ){
         return SrvMsg( RESPONSE , VALID , seq_req++  , data );
     }else{
@@ -136,7 +169,7 @@ SrvMsg rsp_pop_msg(){
 };
 
 ServiceQueue( string tpcName , size_t qLen ) : topicName{ tpcName } , queueSize{ qLen }{  seq_req = seq_rsp = 0;  };
-~ServiceQueue(){  clear_queue( Q_req );  clear_queue( Q_rsp );  }
+~ServiceQueue(){  Q_req.clear();  Q_rsp.clear();  }
 };
 
 /*
@@ -154,13 +187,13 @@ class Connection{
 
 /***** Public *****/ public:
 
+Connection(); // Begin with a closed connection and no bytes transferred
+
 /*** Vars ***/
 status_t /*------------------------------*/ status;
 size_t /*--------------------------------*/ bytes_rcvd;
 size_t /*--------------------------------*/ bytes_sent;
 boost::system::error_code /*-------------*/ netError;
-
-// TODO: ADD NETWORK INFO VARS
 
 };
 

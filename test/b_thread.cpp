@@ -22,53 +22,6 @@ namespace b_ip   = b_asio::ip;
 
 using error_code = boost::system::error_code;
 
-
-template<typename T>
-class concurrent_queue{
-// a simple thread-safe multiple producer, multiple consumer queue (LOCKS)
-// https://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
-
-/***** Protected *****/ protected:
-
-std::queue<T> /*-------*/ _queue; // - Underlying queue
-mutable boost::mutex /**/ _mutex; // - Lock
-boost::condition_variable cond_var; // Semaphore
-
-/***** Public *****/ public:
-
-void push( T const& data ){
-    // Lock the queue, push data, unlock, notify
-    boost::mutex::scoped_lock lock(_mutex);
-    _queue.push( data );
-    lock.unlock();
-    cond_var.notify_one();
-}
-
-bool empty() const{
-    // Lock the queue, then return `true` if the queue is empty
-    boost::mutex::scoped_lock lock(_mutex);
-    return _queue.empty();
-}
-
-bool try_pop( T& popped_value ){
-    /* returns true if there was a value to retrieve (in which case it retrieves it), or false to indicate that the queue was empty. */ 
-    boost::mutex::scoped_lock lock( _mutex );
-    if( _queue.empty() ){  return false;  }
-    popped_value = _queue.front();
-    _queue.pop();
-    return true;
-}
-
-void wait_and_pop( T& popped_value ){
-    // If multiple threads are popping entries from a full queue, then they just get serialized inside wait_and_pop, and everything works fine.
-    boost::mutex::scoped_lock lock(_mutex);
-    while( _queue.empty() ){  cond_var.wait( lock );  }
-    popped_value=_queue.front();
-    _queue.pop();
-}
-
-};
-
 struct Payload{
     boost::shared_ptr<double[]> data;
     size_t /*----------------*/ dataLen;
@@ -77,8 +30,8 @@ struct Payload{
 // Prepare things
 b_asio::io_service /*--------------*/ io_service;
 std::vector<boost::thread> /*------*/ threads;
-concurrent_queue<Payload> input;
-concurrent_queue<Payload> output;
+// concurrent_queue<Payload> input;
+// concurrent_queue<Payload> output;
 size_t /*--------------------------*/ count  = boost::thread::hardware_concurrency() * 2;
 size_t /*--------------------------*/ active = 0;
 size_t /*--------------------------*/ N      = 0;

@@ -1,114 +1,4 @@
-/* ### NOTES ###
-
-*/
-
-#include <cstdlib>
-#include <iostream>
-#include <thread>
-#include <utility>
-#include <boost/asio.hpp>
-#include <queue>
-#include <string>
-#include <vector>
-#include <memory>
-#include <set>
-#include <algorithm>
-
-#include <boost/array.hpp>
-
-#include "../helpers/helper.hpp"
-#include "../src/Connection.hpp"
-
-using std::queue;
-using std::cout;
-using std::endl;
-using std::string;
-using std::vector;
-using std::set;
-using std::max;
-
-const int /*---*/ max_length = 1024;
-extern const bool _DEBUG;
-
-template<size_t N> inline
-boost::array<double,N> bad_boost_arr(){
-    boost::array<double,N> rtnArr;
-    for( size_t i = 0 ; i < N ; i++){  rtnArr[i] = nan("");  }
-    return rtnArr;
-}
-
-template<typename T , size_t N> inline
-bool is_nan( const boost::array<T,N>& arr ){
-    if( N == 0 )  
-        return true;
-    else if(  is_nan( arr[0] )  )  
-        return true;
-    else
-        return false;   
-}
-
-template<typename T>
-void erase( vector<std::unique_ptr<T>>& vec ){
-    // Erase a vector of unique pointers
-    for( auto& pointer : vec ){
-        if( pointer ){
-            delete pointer;
-            pointer = nullptr;
-        }
-    }
-    vec.erase( 
-        std::remove( vec.begin() , vec.end() , nullptr ) , 
-        vec.end() 
-    );
-}
-
-
-/*************** class ServiceBridge_Server Declaration **************************************************************/
-
-/***** ServiceBridge_Server *****/
-
-class ServiceBridge_Server{
-
-/***** Public *****/ public:
-
-/*** Functions ***/
-
-/* Setup */
-bool /*-----*/ parse_service_file( string fullPath );
-size_t /*---*/ how_many_services();
-vector<string> get_served_ROS_topic_names();
-size_t /*---*/ init_server( u_short port_ );
-
-/* Send / Receive */
-bool serve_loop( double spinHz = 100.0 );
-
-/* Create / Destroy */
-ServiceBridge_Server();
-ServiceBridge_Server( string fullPath , size_t nThreadP = 2 );
-~ServiceBridge_Server();
-
-
-/*** Vars ***/
-
-/* Networking */ 
-set<string> /*--------------------------*/ serviceNames;
-status_t /*-----------------------------*/ status;
-string /*-------------------------------*/ ip;
-u_short /*------------------------------*/ port;
-shared_ptr<b_ip::tcp::socket> /*--------*/ sock_ptr;
-vector<ServiceQueue<shared_ptr<double[]>>> services;
-vector<Connection> /*-------------------*/ connections;
-
-/* Threading */ 
-size_t /*-------------------------*/ NthreadsPerTopic;
-size_t /*-------------------------*/ MtotalThreads;
-boost::thread_group /*------------*/ threadPool;
-shared_ptr<b_asio::io_service> /*-*/ scheduler_ptr;
-shared_ptr<b_asio::io_service::work> dispatcher_ptr;
-shared_ptr<b_ip::tcp::acceptor> /**/ porter_ptr;
-
-
-/*** END ***/ }; 
+#include "test01_server.hpp"
 
 
 /*************** class ServiceBridge_Server Definition ***************************************************************/
@@ -162,7 +52,7 @@ bool ServiceBridge_Server::parse_service_file( string fullPath ){
 
             if( !container_has( serviceNames , topicName ) ){  
                 if( maxLen <= 32 ){
-                    services.push_back( ServiceQueue<shared_ptr<double[]>>( topicName , qLen ) );
+                    services.push_back( ServiceQueue<xfer_shr_ptr>( topicName , qLen ) );
                     serviceNames.insert( topicName );
                 }else{
                     cout << "ServiceBridge_Server::parse_service_file: Max number of elements is " << maxElems 
@@ -181,19 +71,6 @@ bool ServiceBridge_Server::parse_service_file( string fullPath ){
 
 size_t /*---*/ ServiceBridge_Server::how_many_services(){  return services.size();  }
 vector<string> ServiceBridge_Server::get_served_ROS_topic_names(){  return convert_set_to_vector( serviceNames );  }
-
-// string /*-------------*/ ip;
-// u_short /*------------*/ port;
-// size_t /*-------------*/ NthreadsPerTopic;
-// size_t /*-------------*/ MtotalThreads;
-// boost::thread_group      threads;
-// b_asio::io_service /*-*/ scheduler
-// b_asio::io_service::work dispatcher;
-// b_tcp::acceptor /*----*/ porter;
-// b_tcp::socket /*------*/ sock;
-
-// size_t /*---*/ init_server();
-// bool /*-----*/ serve_loop();
 
 size_t ServiceBridge_Server::init_server( u_short port_ ){
     // Get the server ready to serve connections
@@ -219,9 +96,15 @@ size_t ServiceBridge_Server::init_server( u_short port_ ){
     // if( _DEBUG ){  cout << "Fetched IP ..." << endl;  }
 
     // 3. Create threads
-    MtotalThreads  = NthreadsPerTopic * serviceNames.size();
+    numServices    = serviceNames.size();
+    MtotalThreads  = NthreadsPerTopic * numServices;
     size_t CPU_lim = boost::thread::hardware_concurrency() * 2;      
     if( CPU_lim > 0 ){  MtotalThreads = min( CPU_lim , MtotalThreads );  }
+    NthreadsPerTopic = (size_t) MtotalThreads / numServices;
+    NthreadsPerTopic += (numServices > 1 ? MtotalThreads % numServices : 0);
+    MtotalThreads = NthreadsPerTopic * numServices;
+    if( _DEBUG ){  cout << "There will be " << MtotalThreads << " threads spread across" 
+                        << numServices << " services with " << NthreadsPerTopic << "threads each." << endl;  }
     for( unsigned i = 0 ; i < MtotalThreads ; ++i ){
 		threadPool.create_thread(
             boost::bind(
@@ -237,14 +120,6 @@ size_t ServiceBridge_Server::init_server( u_short port_ ){
     return 0;
 }
 
-bool ServiceBridge_Server::serve_loop( double spinHz ){
-    status = RUNNING;
-    while( status == RUNNING ){
-        // 1. 
-    }
-    return 1;
-}
-
 
 // FIXME: START HERE
 /*
@@ -254,6 +129,29 @@ bool ServiceBridge_Server::serve_loop( double spinHz ){
     [ ] run gracefully: How to `spin_once`?  Sleep, loop, and assume the other threads are running?
     [ ] exit gracefully: How to make the server close its connections
 */
+
+bool ServiceBridge_Server::accept_all(){
+    
+    vector<string> topics = get_served_ROS_topic_names();
+
+    // 1. For every topic
+    for( size_t i = 0 ; i < numServices ; i++ ){
+        // 2. For every thread serving that topic
+        for( size_t j = 0 ; j < NthreadsPerTopic ; j++ ){
+            // 3. 
+
+        }
+    }
+}
+
+
+bool ServiceBridge_Server::serve_loop( double spinHz ){
+    status = RUNNING;
+    while( status == RUNNING ){
+        // 1. 
+    }
+    return 1;
+}
 
 
 // string getAddress( std::shared_ptr<boost::asio::io_service> ioService , boost::system::error_code& err ){
