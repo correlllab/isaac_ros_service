@@ -108,7 +108,7 @@ size_t ServiceBridge_Server::init_server(){
                         << numServices << " services with " << NthreadsPerTopic << " threads each." << endl;  }
     for( unsigned i = 0 ; i < MtotalThreads ; ++i ){
         if( _DEBUG ){  cout << "\tCreate thread " << i+1 << " of " << MtotalThreads << " ... " << flush;  }
-		// NOTE: Threads are created , but not assigned a job so they CANNOT be joined at this point!  `join()` will HANG
+		// NOTE: Threads are created 
         boost::shared_ptr<boost::thread> thread(
             new boost::thread(
                 boost::bind(

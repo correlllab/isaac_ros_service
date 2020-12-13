@@ -151,6 +151,13 @@ target_link_libraries( ${EXEC_NAME}
 )
 message( "${EXEC_NAME} ready!" )
 
+set( EXEC_NAME test02_server )
+add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp ${SRC_DIR}/Connection.cpp ${SRC_DIR}/IP.cpp )
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
+)
+message( "${EXEC_NAME} ready!" )
 
 
 message( "\n\n Cmake setup COMPLETED" )

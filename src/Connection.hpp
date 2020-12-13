@@ -177,13 +177,6 @@ ServiceQueue( string tpcName , size_t qLen ) : topicName{ tpcName } , queueSize{
 ~ServiceQueue(){  Q_req.clear();  Q_rsp.clear();  }
 };
 
-/*
-1. io_service   : Handles synchronization
-2. work         : Class to inform the io_service when it has work to do.
-2. thread_group : Handles threads
-4. "session"    : User-defined class that does the work of the thread
-*/
-
 /*************** Connection ******************************************************************************************/
 // `Connection` handles messages for one client, and holds data related to that 
 

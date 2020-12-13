@@ -17,12 +17,16 @@
 namespace http {
 namespace server3 {
 
-server::server(const std::string& address, const std::string& port,
-    const std::string& doc_root, std::size_t thread_pool_size)
-  : thread_pool_size_(thread_pool_size),
-    acceptor_(io_service_),
-    new_connection_(new connection(io_service_, request_handler_)),
-    request_handler_(doc_root)
+server::server(
+  const std::string& address, 
+  const std::string& port,
+  const std::string& doc_root, 
+  std::size_t thread_pool_size
+  ) : 
+      thread_pool_size_( thread_pool_size ),
+      acceptor_( io_service_ ),
+      new_connection_( new connection(io_service_, request_handler_ ) ),
+      request_handler_( doc_root )
 {
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
   boost::asio::ip::tcp::resolver resolver(io_service_);

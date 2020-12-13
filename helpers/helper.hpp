@@ -11,7 +11,9 @@
 #include <fstream> // -- File I/O
 // #include <filesystem>
 #include <limits>
+#include <cmath>
 
+#include <boost/array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
@@ -90,7 +92,6 @@ std::vector<T> convert_set_to_vector( const set<T>& s ){
     return v;
 }
 
-
 template< typename T >  
 struct array_deleter{  void operator ()( T const * p ){  delete[] p;  }  };  // Deletion functor to pass to `boost::shared/unique_ptr`
 
@@ -100,6 +101,38 @@ void clear_queue( queue<T>& q ){
     // URL:  https://stackoverflow.com/a/709161
     queue<T> empty;
     std::swap( q , empty );
+};
+
+template<size_t N> inline
+boost::array<double,N> bad_boost_arr(){
+    boost::array<double,N> rtnArr;
+    for( size_t i = 0 ; i < N ; i++){  rtnArr[i] = std::nan("");  }
+    return rtnArr;
+}
+
+template<typename T , size_t N> inline
+bool is_nan( const boost::array<T,N>& arr ){
+    if( N == 0 )  
+        return true;
+    else if(  is_nan( arr[0] )  )  
+        return true;
+    else
+        return false;   
+}
+
+template<typename T>
+void erase( vector<std::unique_ptr<T>>& vec ){
+    // Erase a vector of unique pointers
+    for( auto& pointer : vec ){
+        if( pointer ){
+            delete pointer;
+            pointer = nullptr;
+        }
+    }
+    vec.erase( 
+        std::remove( vec.begin() , vec.end() , nullptr ) , 
+        vec.end() 
+    );
 };
 
 #endif

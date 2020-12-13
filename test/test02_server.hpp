@@ -37,6 +37,7 @@ using boost::make_shared;
 const int /*---*/ max_length = 1024;
 extern const bool _DEBUG;
 
+
 /*************** class ServiceBridge_Server Declaration **************************************************************/
 
 /***** ServiceBridge_Server *****/
