@@ -30,6 +30,9 @@ using std::vector;
 using std::set;
 using std::max;
 
+using boost::shared_ptr;
+using boost::make_shared;
+
 const int /*---*/ max_length = 1024;
 extern const bool _DEBUG;
 
@@ -97,20 +100,21 @@ ServiceBridge_Server( string fullPath , size_t nThreadP = 2 );
 /*** Vars ***/
 
 /* Networking */ 
-set<string> /*--------------------------*/ serviceNames;
-status_t /*-----------------------------*/ status;
-string /*-------------------------------*/ ip;
-u_short /*------------------------------*/ port;
-vector<ServiceQueue<shared_ptr<double[]>>> services;
-vector<Connection> /*-------------------*/ connections;
-shared_ptr<tcp::socket> /*--------------*/ sock_ptr;
-shared_ptr<tcp::acceptor> /*------------*/ porter_ptr;
+set<string> /*---------------------------*/ serviceNames;
+status_t /*------------------------------*/ status;
+string /*--------------------------------*/ ip;
+u_short /*-------------------------------*/ port;
+vector<shared_ptr<ServiceQueue<xfer_type>>> services;
+vector<Connection> /*--------------------*/ connections;
+shared_ptr<tcp::socket> /*---------------*/ sock_ptr;
+shared_ptr<tcp::acceptor> /*-------------*/ porter_ptr;
 
 /* Threading */ 
 size_t /*-------------------------*/ NthreadsPerTopic ,
                                      MtotalThreads    ,
                                      numServices      ; 
 boost::thread_group /*------------*/ threadPool;
+
 shared_ptr<b_asio::io_service> /*-*/ scheduler_ptr;
 shared_ptr<b_asio::io_service::work> dispatcher_ptr;
 

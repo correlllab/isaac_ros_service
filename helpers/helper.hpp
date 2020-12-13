@@ -12,7 +12,6 @@
 // #include <filesystem>
 #include <limits>
 
-#include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
@@ -37,7 +36,6 @@ using std::ostream;
 using std::min;
 
 using boost::shared_ptr;
-using boost::make_shared;
 
 const  std::string _WHITESPACE = " \n\r\t\f\v";
 const  size_t      _BAD_INDEX  =  std::numeric_limits<size_t>::max();

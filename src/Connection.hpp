@@ -22,7 +22,12 @@ namespace b_ip   = b_asio::ip;
 
 using b_ip::tcp;
 
-typedef boost::shared_ptr<double[]> xfer_shr_ptr;
+
+// typedef boost::shared_ptr<double[]> xfer_shr_ptr;
+// typedef boost::array<double,32> xfer_type;
+typedef vector<double> xfer_type; // NOTE: *Copied* structures!
+
+
 typedef boost::packaged_task<int>   task_t;
 typedef boost::shared_ptr<task_t>   ptask_t;
 
@@ -58,15 +63,15 @@ typedef enum StatusType status_t;
 
 struct SrvMsg{
     /*** Vars ***/
-    msg_t /*--*/ type; 
-    status_t     status; 
-    size_t /*-*/ sequence;
-    xfer_shr_ptr data;
-    size_t /*-*/ payload_size;
+    msg_t     type; 
+    status_t  status; 
+    size_t    sequence;
+    xfer_type data;
+    size_t    payload_size;
     /*** Functions ***/
     SrvMsg( msg_t typ , status_t stts , size_t seq , size_t N ) : type{typ} , status{stts} , sequence{seq} {
         payload_size = sizeof( double ) * N;
-        data /*---*/ = xfer_shr_ptr( new double[N] , array_deleter<double>() );
+        data /*---*/ = xfer_type();
     };
 };
 
@@ -81,7 +86,7 @@ class concurrent_queue{
 /***** Protected *****/ protected:
 
 std::queue<T> /*-------*/ _queue; // - Underlying queue
-boost::mutex /*--------*/ _mutex; // - Lock
+mutable boost::mutex /*--------*/ _mutex; // - Lock
 boost::condition_variable cond_var; // Semaphore
 
 /***** Public *****/ public:
@@ -190,10 +195,10 @@ class Connection{
 Connection(); // Begin with a closed connection and no bytes transferred
 
 /*** Vars ***/
-status_t /*------------------------------*/ status;
-size_t /*--------------------------------*/ bytes_rcvd;
-size_t /*--------------------------------*/ bytes_sent;
-boost::system::error_code /*-------------*/ netError;
+status_t /*------------*/ status;
+size_t /*--------------*/ bytes_rcvd;
+size_t /*--------------*/ bytes_sent;
+boost::system::error_code netError;
 
 };
 

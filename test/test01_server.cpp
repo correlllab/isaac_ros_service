@@ -52,7 +52,11 @@ bool ServiceBridge_Server::parse_service_file( string fullPath ){
 
             if( !container_has( serviceNames , topicName ) ){  
                 if( maxLen <= 32 ){
-                    services.push_back( ServiceQueue<xfer_shr_ptr>( topicName , qLen ) );
+                    services.emplace_back( 
+                        boost::make_shared<ServiceQueue<xfer_type>>(
+                            topicName , qLen
+                        )
+                    );
                     serviceNames.insert( topicName );
                 }else{
                     cout << "ServiceBridge_Server::parse_service_file: Max number of elements is " << maxElems 
@@ -78,17 +82,30 @@ size_t ServiceBridge_Server::init_server( u_short port_ ){
     if( _DEBUG ){  cout << "Enter init_server ... " << flush;  }
 
     // 1. Set up synchronization
+
     scheduler_ptr  = make_shared<b_asio::io_service>();
     if( _DEBUG ){  cout << "Created scheduler ..." << endl;  }
+
     dispatcher_ptr = make_shared<b_asio::io_service::work>( *scheduler_ptr );
     if( _DEBUG ){  cout << "Created dispatcher ..." << endl;  }
+
+    if( _DEBUG ){  cout << "About to create the acceptor ... " << flush;  }
     porter_ptr     = make_shared<b_ip::tcp::acceptor>( *scheduler_ptr , b_ip::tcp::endpoint( b_ip::tcp::v4() , port ) );
-    if( _DEBUG ){  cout << "Created accepter ..." << endl;  }
+    if( _DEBUG ){  cout << "Created accepter for port " << port << " ..." << endl;  }
+
+
+    
+    
+    
+    
+    
+    
+    
     sock_ptr       = make_shared<b_ip::tcp::socket>( *scheduler_ptr );
     if( _DEBUG ){  cout << "Created socket ..." << endl;  }
     
     // 2. Set up the network protocol
-    // boost::system::error_code err = boost::system::error_code();
+    boost::system::error_code err = boost::system::error_code();
     if( _DEBUG ){  cout << "Created err ..." << endl;  }
     port = port_;
     // ip   = get_local_ip_addr( *sock_ptr );
@@ -142,6 +159,8 @@ bool ServiceBridge_Server::accept_all(){
 
         }
     }
+
+    return 1;
 }
 
 

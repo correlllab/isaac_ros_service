@@ -13,10 +13,11 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -lboost_system -pthrea
 
 # 2. Set paths to look for headers and sources in the project
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/out" )
-set( EXM_DIR ${PROJECT_SOURCE_DIR}/example )
-set( SRC_DIR ${PROJECT_SOURCE_DIR}/src     )
-set( TST_DIR ${PROJECT_SOURCE_DIR}/test    )
-set( HLP_DIR ${PROJECT_SOURCE_DIR}/helpers )
+set( EXM_DIR ${PROJECT_SOURCE_DIR}/example     )
+set( SRC_DIR ${PROJECT_SOURCE_DIR}/src         )
+set( TST_DIR ${PROJECT_SOURCE_DIR}/test        )
+set( HLP_DIR ${PROJECT_SOURCE_DIR}/helpers     )
+set( FUL_DIR ${PROJECT_SOURCE_DIR}/full_server )
 # NOTE: Use ${VAR_NAME} to substitute the value of `VAR_NAME` in that place
 
 # the -I flag in gcc
@@ -25,6 +26,7 @@ include_directories(
   ${SRC_DIR}
   ${TST_DIR}
   ${HLP_DIR}
+  ${FUL_DIR}
 ) 
 
 # 3. Shortcuts
@@ -118,6 +120,20 @@ target_link_libraries( ${EXEC_NAME}
 )
 message( "${EXEC_NAME} ready!" )
 
+set( EXEC_NAME posix_main )
+add_executable( ${EXEC_NAME} ${FUL_DIR}/${EXEC_NAME}.cpp 
+  ${FUL_DIR}/connection.cpp 
+  ${FUL_DIR}/mime_types.cpp 
+  ${FUL_DIR}/reply.cpp
+  ${FUL_DIR}/request_handler.cpp
+  ${FUL_DIR}/request_parser.cpp
+  ${FUL_DIR}/server.cpp
+)
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+)
+message( "${EXEC_NAME} ready!" )
+
 ##### Tests #####
 
 set( EXEC_NAME shared )
@@ -127,13 +143,13 @@ target_link_libraries( ${EXEC_NAME}
 )
 message( "${EXEC_NAME} ready!" )
 
-# set( EXEC_NAME test01_server )
-# add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp ${SRC_DIR}/Connection.cpp ${SRC_DIR}/IP.cpp )
-# target_link_libraries( ${EXEC_NAME} 
-#   ${Boost_LIBRARIES}
-#   ${CMAKE_THREAD_LIBS_INIT}
-# )
-# message( "${EXEC_NAME} ready!" )
+set( EXEC_NAME test01_server )
+add_executable( ${EXEC_NAME} ${TST_DIR}/${EXEC_NAME}.cpp ${HLP_DIR}/helper.cpp ${SRC_DIR}/Connection.cpp ${SRC_DIR}/IP.cpp )
+target_link_libraries( ${EXEC_NAME} 
+  ${Boost_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
+)
+message( "${EXEC_NAME} ready!" )
 
 
 
