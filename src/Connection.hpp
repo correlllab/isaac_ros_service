@@ -1,16 +1,23 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+#include <iostream>
+#include <unistd.h>
+
+#include <boost/move/move.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
-#include <boost/asio.hpp>
-#include <boost/move/move.hpp>
-#include <iostream>
-#include <unistd.h>
-#include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
+
+#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+
+
+
+
+
 
 #include "../helpers/helper.hpp"
 #include "IP.hpp"
@@ -54,6 +61,7 @@ enum StatusType{
     EMPTY   ,
     OPEN    ,
     CLOSED  ,
+    WAITING ,
     RUNNING ,
     STOPPED ,
 };
@@ -180,19 +188,36 @@ ServiceQueue( string tpcName , size_t qLen ) : topicName{ tpcName } , queueSize{
 /*************** Connection ******************************************************************************************/
 // `Connection` handles messages for one client, and holds data related to that 
 
+#define BUF_SZ 1024
+
+typedef boost::shared_ptr<b_asio::mutable_buffer>  buf_ptr;
+
 // https://gist.github.com/wush978/6190443
 class Connection{
 
 /***** Public *****/ public:
 
-Connection(); // Begin with a closed connection and no bytes transferred
+Connection( b_asio::io_service& io_service_ ); // Begin with a closed connection and no bytes transferred
+// Each individual socket connection is given a file descriptor
+
+bool accept( b_asio::io_service& io_service_ , tcp::acceptor& acceptor_ );
+
+bool Connection::is_closed();
+
+void read( b_asio::mutable_buffer& outBuffer );
+void write( b_asio::mutable_buffer& inBuffer );
+
+bool try_read_bytes( size_t Nbytes , b_asio::mutable_buffer& outBuffer );
 
 /*** Vars ***/
 status_t /*------------*/ status;
 size_t /*--------------*/ bytes_rcvd;
 size_t /*--------------*/ bytes_sent;
 boost::system::error_code netError;
-
+string /*--------------*/ ip;
+string /*--------------*/ port;
+tcp::socket /*---------*/ socket;
+b_asio::mutable_buffer    buffer;
 };
 
 #endif

@@ -24,6 +24,7 @@ using std::vector;
 using std::set;
 using std::queue;
 using std::string;
+using std::to_string;
 using std::size_t;
 
 using std::cout;

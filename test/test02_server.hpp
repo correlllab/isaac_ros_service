@@ -1,10 +1,6 @@
 #ifndef TSTSVR1_H
 #define TSTSVR1_H
 
-/* ### NOTES ###
-
-*/
-
 #include <cstdlib>
 #include <iostream>
 #include <thread>
@@ -56,6 +52,7 @@ size_t /*---*/ init_server();
 
 /* Send / Receive */
 bool serve_loop( double spinHz = 100.0 );
+bool accept_one();
 bool accept_all();
 
 /* Create / Destroy */

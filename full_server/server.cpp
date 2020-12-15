@@ -28,7 +28,7 @@ server::server(
       new_connection_( new connection(io_service_, request_handler_ ) ),
       request_handler_( doc_root )
 {
-  // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
+  // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR)
   boost::asio::ip::tcp::resolver resolver(io_service_);
   boost::asio::ip::tcp::resolver::query query(address, port);
   boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
@@ -67,7 +67,7 @@ void server::handle_accept(const boost::system::error_code& e)
   if (!e)
   {
     new_connection_->start();
-    new_connection_.reset(new connection(io_service_, request_handler_));
+    new_connection_.reset( new connection( io_service_ , request_handler_ ) );
     acceptor_.async_accept(new_connection_->socket(),
         boost::bind(&server::handle_accept, this,
           boost::asio::placeholders::error));

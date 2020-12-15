@@ -159,5 +159,7 @@ target_link_libraries( ${EXEC_NAME}
 )
 message( "${EXEC_NAME} ready!" )
 
+# https://stackoverflow.com/questions/14077611/how-do-i-tell-cmake-to-link-in-a-static-library-in-the-source-directory
+# https://stackoverflow.com/a/14078232
 
 message( "\n\n Cmake setup COMPLETED" )

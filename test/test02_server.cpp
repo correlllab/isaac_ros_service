@@ -1,4 +1,4 @@
-#include "test01_server.hpp"
+#include "test02_server.hpp"
 
 
 /*************** class ServiceBridge_Server Definition ***************************************************************/
@@ -136,6 +136,40 @@ size_t ServiceBridge_Server::init_server(){
     [ ] run gracefully: How to `spin_once`?  Sleep, loop, and assume the other threads are running?
     [ ] exit gracefully: How to make the server close its connections
 */
+
+bool ServiceBridge_Server::accept_one(){
+    // 0. Create a server endpoint.
+    b_ip::tcp::resolver /*--*/ resolver( scheduler );
+    b_ip::tcp::resolver::query query( ip , to_string( port ) );
+    b_ip::tcp::endpoint /*--*/ endpoint = *resolver.resolve( query );
+    // 1. Open the connection and set options
+    receiver.open( endpoint.protocol() );
+    receiver.set_option( b_ip::tcp::acceptor::reuse_address( true ) );
+    // 2. Bind the connnection and listen for a client
+    receiver.bind( endpoint );
+    receiver.listen();
+    // 3.Attempt connection
+    while( 1 ){
+        tcp::socket socket( scheduler );
+        /* If the connection has been cleanly closed by the peer you should get an EOF while reading. 
+        Otherwise I generally ping in order to figure out if the connection is really alive. 
+
+        Just check for boost::asio::error::eof error in your async_receive handler. 
+        It means the connection has been closed. That's the only proper way to do this.*/
+
+        /* https://www.bogotobogo.com/cplusplus/multithreaded4_cplusplus11.php
+        Once our thread started, 
+        we should let the code know if we want to wait for it to finish by joining with it 
+        or leave it to run on its own by detaching it.  */
+
+        receiver.accept( sock );
+        // If the call succeeds, the active socket is connected to the client application and is ready to be used for communication with it.
+
+        /* A thread can be detached by explicitly invoking the detach() member function on the boost::thread object. 
+        In this case, the boost::thread object ceases to represent the now-detached thread, and instead represents Not-a-Thread. */
+    }
+}
+
 
 bool ServiceBridge_Server::accept_all(){
     
