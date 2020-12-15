@@ -45,16 +45,18 @@ bool Connection::is_closed(){
 }
 
 bool Connection::try_read_bytes( size_t Nbytes , b_asio::mutable_buffer& outBuffer ){
-    if( socket.by ) // FIXME: START HERE
-}
+    if( socket.available() >= Nbytes ){
+        bytes_rcvd += socket.read_some( outBuffer , netError );
+        if( _DEBUG )  cout << "Transfer Result: " << netError.message() << endl;
+    }
 
-void Connection::read( b_asio::mutable_buffer& outBuffer ){
-    size_t amtRead = socket.read_some( buffer , netError );
-    b_asio::buffer_copy( buffer , outBuffer );
+    b_asio::read()
+
+    return false;
 }
 
 
 void Connection::write( b_asio::mutable_buffer& inBuffer ){
-    b_asio::buffer_copy( inBuffer , buffer );
-    size_t amtRead = socket.write_some( buffer , netError );
+    b_asio::write()
+    size_t amtRead = socket.write_some( inBuffer , netError );
 }

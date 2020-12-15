@@ -217,7 +217,6 @@ boost::system::error_code netError;
 string /*--------------*/ ip;
 string /*--------------*/ port;
 tcp::socket /*---------*/ socket;
-b_asio::mutable_buffer    buffer;
 };
 
 #endif
